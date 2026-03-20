@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>GigShield</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#080C14; --card:#111827; --card2:#1A2235;
+  --orange:#FF5C1A; --og:rgba(255,92,26,0.15); --ob:rgba(255,92,26,0.3);
+  --green:#00D68F; --gg:rgba(0,214,143,0.12);
+  --red:#FF4560; --rg:rgba(255,69,96,0.15);
+  --yellow:#FFB800;
+  --t1:#F0F4FF; --t2:#8A95A8; --t3:#5A6478;
+  --border:rgba(255,255,255,0.07);
+  --fd:'Syne',sans-serif; --fb:'DM Sans',sans-serif;
+  --r:20px; --rs:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:#030508;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:var(--fb);color:var(--t1)}
+
+/* ── PHONE SHELL ── */
+.phone{
+  width:390px;height:844px;
+  background:var(--bg);border-radius:44px;overflow:hidden;
+  position:relative;
+  box-shadow:0 0 0 1px rgba(255,255,255,0.08),0 40px 120px rgba(0,0,0,0.9),0 0 80px rgba(255,92,26,0.07);
+}
+
+/* ── STATUS BAR (always on top, never scrolls) ── */
+.sbar{
+  position:absolute;top:0;left:0;right:0;height:44px;z-index:200;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;font-size:12px;font-weight:600;color:var(--t1);
+  pointer-events:none;
+}
+.sbar-icons{display:flex;gap:5px;align-items:center}
+
+/* ── SCREEN WRAPPER ── */
+/* Each screen = flex column, fills phone, fixed height */
+.screen{
+  position:absolute;inset:0;
+  display:none;flex-direction:column;
+}
+.screen.active{display:flex}
+
+/* ── SCROLL AREA (grows, scrolls) ── */
+.scroll{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  scrollbar-width:none;
+}
+.scroll::-webkit-scrollbar{display:none}
+.scroll-pad{padding-bottom:24px}
+
+/* ── NAV BAR (always at bottom, never moves) ── */
+.nav{
+  flex-shrink:0;height:72px;
+  background:rgba(8,12,20,0.97);
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-around;
+  padding:0 8px 8px;
+}
+.ni{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:8px 14px;border-radius:12px;cursor:pointer;min-width:60px;
+}
+.ni svg{width:20px;height:20px}
+.ni span{font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--t3)}
+.ni.on span{color:var(--orange)}
+.ni svg path,.ni svg polyline,.ni svg line,.ni svg circle,.ni svg rect{stroke:var(--t3);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ni.on svg path,.ni.on svg polyline,.ni.on svg line,.ni.on svg circle,.ni.on svg rect{stroke:var(--orange)}
+
+/* ── REUSABLE ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px}
+.btn{width:100%;padding:17px;background:var(--orange);color:#fff;font-family:var(--fd);font-size:16px;font-weight:700;border:none;border-radius:var(--r);cursor:pointer;box-shadow:0 8px 28px rgba(255,92,26,.35);letter-spacing:.2px}
+.btn:active{opacity:.88;transform:scale(.98)}
+.btn-out{width:100%;padding:15px;background:transparent;color:var(--t1);font-family:var(--fd);font-size:15px;font-weight:600;border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer}
+.btn-red{width:100%;padding:15px;background:transparent;color:var(--red);font-family:var(--fd);font-size:15px;font-weight:600;border:1.5px solid rgba(255,69,96,.3);border-radius:var(--r);cursor:pointer}
+.lbl{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t3);display:block;margin-bottom:7px}
+.inp{width:100%;padding:15px 17px;background:var(--card2);border:1.5px solid var(--border);border-radius:var(--rs);color:var(--t1);font-family:var(--fb);font-size:15px;outline:none}
+.inp:focus{border-color:var(--orange)}
+.inp::placeholder{color:var(--t3)}
+select.inp{appearance:none;cursor:pointer}
+select.inp option{background:#1A2235;color:var(--t1)}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:100px;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+.bg-green{background:var(--gg);color:var(--green);border:1px solid rgba(0,214,143,.2)}
+.bg-orange{background:var(--og);color:var(--orange);border:1px solid var(--ob)}
+.bg-red{background:var(--rg);color:var(--red);border:1px solid rgba(255,69,96,.2)}
+.bg-yellow{background:rgba(255,184,0,.1);color:var(--yellow);border:1px solid rgba(255,184,0,.2)}
+.back{width:38px;height:38px;border-radius:50%;background:var(--card2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.back svg{width:17px;height:17px}
+.back svg path{stroke:var(--t1);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.topbar{padding:52px 24px 12px;display:flex;align-items:center;justify-content:space-between}
+.ttl{font-family:var(--fd);font-size:26px;font-weight:800;color:var(--t1);line-height:1.2}
+.sub{font-size:13px;color:var(--t2);margin-top:4px}
+.px{padding-left:24px;padding-right:24px}
+.mb8{margin-bottom:8px} .mb12{margin-bottom:12px} .mb16{margin-bottom:16px} .mb20{margin-bottom:20px}
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;padding:0 24px;margin-bottom:10px}
+.sec-lbl{font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--t3)}
+.sec-link{font-size:12px;color:var(--orange);font-weight:600;cursor:pointer}
+.prog{height:3px;background:var(--border);border-radius:100px;overflow:hidden;margin-bottom:22px}
+.prog-fill{height:100%;background:var(--orange);border-radius:100px}
+
+/* ── SPLASH ── */
+#s-splash{background:var(--bg)}
+#s-splash .scroll{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 32px;min-height:100%}
+.orb{position:fixed;border-radius:50%;filter:blur(90px);opacity:.12;pointer-events:none}
+.logo-box{width:86px;height:86px;background:linear-gradient(135deg,var(--orange),#FF8A50);border-radius:26px;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;box-shadow:0 18px 50px rgba(255,92,26,.4)}
+.logo-box svg{width:46px;height:46px}
+.sp-title{font-family:var(--fd);font-size:40px;font-weight:800;line-height:1;margin-bottom:14px}
+.sp-title span{color:var(--orange)}
+.sp-tag{font-size:15px;color:var(--t2);line-height:1.6;margin-bottom:40px;max-width:270px}
+.sp-stats{display:flex;gap:0;width:100%;margin-bottom:40px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.sp-stat{flex:1;padding:16px 12px;text-align:center;border-right:1px solid var(--border)}
+.sp-stat:last-child{border-right:none}
+.sp-num{font-family:var(--fd);font-size:20px;font-weight:800;color:var(--orange)}
+.sp-lbl{font-size:11px;color:var(--t3);margin-top:3px;line-height:1.3}
+.sp-btns{width:100%;display:flex;flex-direction:column;gap:10px}
+.sp-trust{font-size:12px;color:var(--t3);display:flex;align-items:center;justify-content:center;gap:5px;margin-top:4px}
+
+/* ── ONBOARD ── */
+.ob-body{padding:0 24px}
+.ob-ttl{font-family:var(--fd);font-size:26px;font-weight:800;color:var(--t1);margin-bottom:5px}
+.ob-sub{font-size:13px;color:var(--t2);margin-bottom:22px;display:flex;align-items:center;gap:5px}
+.ig{margin-bottom:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sel-wrap{position:relative}
+.sel-arr{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--t2);font-size:11px;pointer-events:none}
+.plat{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pb{padding:13px;border-radius:var(--rs);border:1.5px solid var(--border);background:var(--card2);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;font-family:var(--fb);font-size:14px;font-weight:600;color:var(--t2);transition:all .2s}
+.pb.on{border-color:var(--orange);background:var(--og);color:var(--t1)}
+.pb:active{transform:scale(.97)}
+.pi{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+.z-pi{background:#E23744;color:#fff}
+.sw-pi{background:#FC8019;color:#fff}
+.earn-val{font-family:var(--fd);font-size:26px;font-weight:800;color:var(--orange);margin-bottom:10px}
+.earn-val span{font-size:13px;color:var(--t2);font-weight:400;font-family:var(--fb)}
+.range{-webkit-appearance:none;width:100%;height:4px;border-radius:100px;outline:none;margin-bottom:7px;cursor:pointer}
+.range::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--orange);cursor:pointer;box-shadow:0 0 10px rgba(255,92,26,.5);border:3px solid white}
+.range-lbls{display:flex;justify-content:space-between;font-size:11px;color:var(--t3)}
+
+/* ── RISK ── */
+.risk-card{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:24px 20px;margin-bottom:14px}
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:20px}
+.g-num{font-family:var(--fd);font-size:44px;font-weight:800;color:var(--t1);line-height:1;margin-top:-6px}
+.g-num span{font-size:18px;color:var(--t2);font-weight:400}
+.g-sub{font-size:11px;color:var(--t2);margin-top:3px}
+.rf{display:flex;flex-direction:column;gap:10px}
+.rfi{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--card2);border-radius:var(--rs);border:1px solid var(--border)}
+.rfi-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.rfi-info{flex:1}
+.rfi-name{font-size:13px;font-weight:600;color:var(--t1)}
+.rfi-zone{font-size:11px;color:var(--t2);margin-top:1px}
+.rl{font-size:10px;font-weight:700;letter-spacing:.4px;padding:4px 9px;border-radius:100px}
+.rl-h{background:var(--rg);color:var(--red)}
+.rl-m{background:var(--og);color:var(--orange)}
+.rl-l{background:var(--gg);color:var(--green)}
+.dis-stat{background:linear-gradient(135deg,rgba(255,92,26,.08),rgba(255,92,26,.03));border:1px solid var(--ob);border-radius:var(--rs);padding:14px;display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.ds-icon{width:40px;height:40px;background:var(--og);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.ds-num{font-family:var(--fd);font-size:20px;font-weight:800;color:var(--orange)}
+.ds-lbl{font-size:11px;color:var(--t2);margin-top:2px}
+.ai-note{background:var(--card2);border:1px solid var(--border);border-radius:var(--rs);padding:13px 15px;margin-bottom:18px;display:flex;align-items:center;gap:11px}
+
+/* ── PLANS ── */
+.plan-card{background:var(--card);border:1.5px solid var(--border);border-radius:22px;padding:20px;margin-bottom:12px;position:relative;overflow:hidden;cursor:pointer}
+.plan-card.feat{border-color:var(--orange);background:linear-gradient(135deg,rgba(255,92,26,.07),rgba(255,92,26,.02));box-shadow:0 0 0 1px rgba(255,92,26,.15),0 16px 50px rgba(255,92,26,.1)}
+.plan-card.gld{border-color:var(--yellow);background:linear-gradient(135deg,rgba(255,184,0,.07),rgba(255,184,0,.02));box-shadow:0 0 0 1px rgba(255,184,0,.15)}
+.pop-badge{position:absolute;top:14px;right:14px;background:var(--orange);color:white;font-size:10px;font-weight:800;letter-spacing:.4px;padding:4px 9px;border-radius:100px}
+.gld-badge{position:absolute;top:14px;right:14px;background:var(--yellow);color:#1A1200;font-size:10px;font-weight:800;padding:4px 9px;border-radius:100px}
+.pt{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t3);margin-bottom:4px}
+.pt.o{color:var(--orange)} .pt.g{color:var(--yellow)}
+.pn{font-family:var(--fd);font-size:20px;font-weight:800;color:var(--t1);margin-bottom:3px}
+.pp{display:flex;align-items:baseline;gap:7px;margin-bottom:3px}
+.pp-amt{font-family:var(--fd);font-size:28px;font-weight:800;color:var(--t1)}
+.pp-amt.o{color:var(--orange)} .pp-amt.g{color:var(--yellow)}
+.pp-per{font-size:13px;color:var(--t2)}
+.pp-orig{font-size:12px;color:var(--t3);text-decoration:line-through}
+.pai{font-size:11px;color:var(--green);margin-bottom:12px;display:flex;align-items:center;gap:4px}
+.pcov{background:rgba(255,255,255,.04);border-radius:var(--rs);padding:11px 13px;font-size:13px;color:var(--t2);margin-bottom:12px}
+.pcov strong{color:var(--orange);font-family:var(--fd);font-size:15px;font-weight:700}
+.pcov.g strong{color:var(--yellow)}
+.pfeats{display:flex;flex-direction:column;gap:7px;margin-bottom:16px}
+.pf{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--t2)}
+.pfd{width:17px;height:17px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
+.pfd.gr{background:var(--gg);color:var(--green)}
+.pfd.or{background:var(--og);color:var(--orange)}
+.pfd.gl{background:rgba(255,184,0,.1);color:var(--yellow)}
+.psb{width:100%;padding:14px;border-radius:var(--rs);font-family:var(--fd);font-size:14px;font-weight:700;border:none;cursor:pointer}
+.psb.b{background:var(--card2);color:var(--t1);border:1.5px solid var(--border)}
+.psb.s{background:var(--orange);color:white;box-shadow:0 6px 20px rgba(255,92,26,.3)}
+.psb.m{background:var(--yellow);color:#1A1200;box-shadow:0 6px 20px rgba(255,184,0,.25)}
+.plans-note{text-align:center;font-size:12px;color:var(--t3);padding:0 24px 6px;display:flex;align-items:center;justify-content:center;gap:5px}
+
+/* ── DASHBOARD ── */
+.dash-hdr{padding:52px 24px 16px;display:flex;align-items:center;justify-content:space-between}
+.dash-greet{font-size:13px;color:var(--t2)}
+.dash-name{font-family:var(--fd);font-size:19px;font-weight:800;color:var(--t1)}
+.dash-right{display:flex;gap:9px;align-items:center}
+.notif{width:38px;height:38px;border-radius:50%;background:var(--card2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative}
+.notif svg{width:17px;height:17px}
+.notif svg path{stroke:var(--t1);fill:none;stroke-width:2;stroke-linecap:round}
+.ndot{position:absolute;top:7px;right:7px;width:8px;height:8px;background:var(--red);border-radius:50%;border:2px solid var(--bg)}
+.avt{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--orange),#FF8A50);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:17px;font-weight:800;color:white;border:2px solid rgba(255,92,26,.4)}
+
+/* HERO */
+.hero{border-radius:22px;padding:22px;position:relative;overflow:hidden;margin:0 24px 16px;box-shadow:0 18px 50px rgba(255,92,26,.3)}
+.hero.std{background:linear-gradient(135deg,#FF5C1A 0%,#FF7A3D 60%,#FF9A6C 100%)}
+.hero.bsc{background:linear-gradient(135deg,#2A3F5F 0%,#1E3050 100%);box-shadow:0 18px 50px rgba(30,48,80,.5)}
+.hero.max{background:linear-gradient(135deg,#C68B00 0%,#E6A800 60%,#FFD060 100%);box-shadow:0 18px 50px rgba(198,139,0,.35)}
+.hero::before{content:'';position:absolute;top:-50px;right:-50px;width:200px;height:200px;background:rgba(255,255,255,.07);border-radius:50%}
+.hero::after{content:'';position:absolute;bottom:-70px;left:-30px;width:160px;height:160px;background:rgba(0,0,0,.06);border-radius:50%}
+.h-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.2);border-radius:100px;padding:5px 12px;font-size:11px;font-weight:700;color:white;letter-spacing:.4px;margin-bottom:14px;position:relative;z-index:1}
+.hpulse{width:8px;height:8px;background:#00FF88;border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.3)}}
+.h-lbl{font-size:12px;color:rgba(255,255,255,.7);margin-bottom:3px;position:relative;z-index:1}
+.h-amt{font-family:var(--fd);font-size:44px;font-weight:800;color:white;line-height:1;margin-bottom:3px;position:relative;z-index:1}
+.h-sub{font-size:11px;color:rgba(255,255,255,.6);margin-bottom:16px;position:relative;z-index:1}
+.h-div{height:1px;background:rgba(255,255,255,.2);margin-bottom:12px;position:relative;z-index:1}
+.h-meta{display:flex;justify-content:space-between;position:relative;z-index:1}
+.h-ml{font-size:11px;color:rgba(255,255,255,.6)}
+.h-mv{font-size:13px;font-weight:700;color:white;margin-top:2px}
+
+/* ALERT BANNER */
+.alert-banner{margin:0 24px 16px;background:linear-gradient(135deg,rgba(255,69,96,.12),rgba(255,92,26,.07));border:1px solid rgba(255,69,96,.25);border-radius:var(--rs);padding:13px 15px;display:flex;align-items:center;gap:11px;cursor:pointer;animation:ablink 2s infinite}
+@keyframes ablink{0%,100%{border-color:rgba(255,69,96,.25)}50%{border-color:rgba(255,69,96,.5)}}
+.alert-banner:active{transform:scale(.98)}
+.ab-ico{font-size:22px}
+.ab-txt{flex:1}
+.ab-ttl{font-size:13px;font-weight:700;color:var(--red)}
+.ab-sub{font-size:11px;color:var(--t2);margin-top:1px}
+.ab-arr{color:var(--red);font-size:15px}
+
+/* CONDITIONS */
+.cond-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 24px;margin-bottom:16px}
+.cond-card{background:var(--card);border:1px solid var(--border);border-radius:var(--rs);padding:14px}
+.cond-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.cond-ico{font-size:18px}
+.cdot{width:8px;height:8px;border-radius:50%}
+.cdot-r{background:var(--red);box-shadow:0 0 6px rgba(255,69,96,.5)}
+.cdot-y{background:var(--yellow);box-shadow:0 0 6px rgba(255,184,0,.5)}
+.cdot-g{background:var(--green);box-shadow:0 0 6px rgba(0,214,143,.5)}
+.cond-lbl{font-size:10px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.cond-val{font-family:var(--fd);font-size:17px;font-weight:700;color:var(--t1)}
+.cond-st{font-size:11px;margin-top:3px}
+.st-r{color:var(--red)} .st-y{color:var(--yellow)} .st-g{color:var(--green)}
+
+/* EARNINGS CARD */
+.earn-card{margin:0 24px 16px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px}
+.ec-top{display:flex;justify-content:space-between;align-items:flex-start}
+.ec-lbl{font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.ec-amt{font-family:var(--fd);font-size:26px;font-weight:800;color:var(--green);margin-top:4px}
+.ec-sub{font-size:11px;color:var(--t3);margin-top:2px}
+.mini-chart{display:flex;align-items:flex-end;gap:5px;height:46px}
+.mb-bar{flex:1;border-radius:4px}
+.mb-on{background:var(--green)}
+.mb-off{background:var(--card2)}
+
+/* ACTIVITY */
+.act-list{padding:0 24px;display:flex;flex-direction:column;gap:9px}
+.act-item{background:var(--card);border:1px solid var(--border);border-radius:var(--rs);padding:13px 15px;display:flex;align-items:center;gap:12px}
+.act-ico{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.act-info{flex:1}
+.act-ttl{font-size:14px;font-weight:600;color:var(--t1)}
+.act-meta{font-size:11px;color:var(--t3);margin-top:2px}
+.act-r{text-align:right}
+.act-amt{font-family:var(--fd);font-size:15px;font-weight:700;color:var(--green)}
+.act-ck{font-size:11px;color:var(--green)}
+
+/* ── ALERT SCREEN ── */
+.alert-top{background:linear-gradient(180deg,rgba(255,69,96,.14) 0%,transparent 100%);padding:52px 24px 20px;text-align:center;position:relative}
+.at-back{position:absolute;top:52px;left:24px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.09);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.at-back svg{width:17px;height:17px}
+.at-back svg path{stroke:white;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.at-ico{width:96px;height:96px;background:rgba(255,69,96,.1);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:46px;border:2px solid rgba(255,69,96,.2);animation:aglow 2s infinite}
+@keyframes aglow{0%,100%{box-shadow:0 0 20px rgba(255,69,96,.2)}50%{box-shadow:0 0 40px rgba(255,69,96,.4)}}
+.at-badge{display:inline-flex;align-items:center;gap:5px;background:var(--rg);border:1px solid rgba(255,69,96,.3);border-radius:100px;padding:5px 14px;font-size:11px;font-weight:700;color:var(--red);letter-spacing:.8px;margin-bottom:12px}
+.at-ttl{font-family:var(--fd);font-size:24px;font-weight:800;color:var(--t1);line-height:1.2;margin-bottom:7px}
+.at-sub{font-size:13px;color:var(--red);font-weight:600;margin-bottom:5px}
+.at-meta{font-size:12px;color:var(--t2)}
+.proc-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:14px}
+.proc-ttl{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t3);margin-bottom:14px}
+.proc-steps{display:flex;flex-direction:column;gap:13px}
+.pstep{display:flex;align-items:center;gap:12px}
+.pschk{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.pschk.ok{background:var(--gg);color:var(--green);border:1px solid rgba(0,214,143,.2)}
+.ps-info{flex:1}
+.ps-ttl{font-size:13px;font-weight:600;color:var(--t1)}
+.ps-sub{font-size:11px;color:var(--t3);margin-top:1px}
+.pay-card{background:linear-gradient(135deg,rgba(0,214,143,.08),rgba(0,214,143,.03));border:1.5px solid rgba(0,214,143,.25);border-radius:var(--r);padding:22px;margin-bottom:14px;text-align:center}
+.pay-lbl{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--green);margin-bottom:7px}
+.pay-amt{font-family:var(--fd);font-size:50px;font-weight:800;color:var(--green);line-height:1;margin-bottom:7px}
+.pay-upi{font-size:13px;color:var(--t2);margin-bottom:3px}
+.pay-time{font-size:11px;color:var(--t3);margin-bottom:14px}
+.pay-cov{font-size:13px;color:var(--t1);background:var(--card2);border-radius:8px;padding:9px 14px;display:inline-block}
+.trust-row{background:var(--card);border:1px solid var(--border);border-radius:var(--rs);padding:15px 17px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.tr-l{} .tr-lbl{font-size:11px;color:var(--t3);margin-bottom:3px}
+.tr-val{font-family:var(--fd);font-size:20px;font-weight:800;color:var(--green)}
+.tr-sub{font-size:11px;color:var(--t2);margin-top:2px}
+.tr-r{text-align:right}
+.tr-rl{font-size:10px;color:var(--t3);margin-bottom:4px}
+.tr-sig{font-size:12px;color:var(--green)}
+
+/* ── CLAIMS ── */
+.cl-hdr{padding:52px 24px 14px}
+.cl-ttl{font-family:var(--fd);font-size:26px;font-weight:800;color:var(--t1)}
+.cl-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.cl-stat{background:var(--card);border:1px solid var(--border);border-radius:var(--rs);padding:13px 15px}
+.cl-sl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px}
+.cl-sv{font-family:var(--fd);font-size:20px;font-weight:800;color:var(--t1);margin-top:3px}
+.cl-sv.g{color:var(--green)} .cl-sv.y{color:var(--yellow)}
+.fpills{display:flex;gap:7px;padding:12px 24px;overflow-x:auto;scrollbar-width:none}
+.fpills::-webkit-scrollbar{display:none}
+.fp{padding:7px 14px;border-radius:100px;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;border:1.5px solid var(--border);background:transparent;color:var(--t2);font-family:var(--fb)}
+.fp.on{background:var(--orange);color:white;border-color:var(--orange)}
+.cl-list{padding:0 24px;display:flex;flex-direction:column;gap:10px}
+.cl-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;cursor:pointer}
+.cl-card:active{transform:scale(.98)}
+.cl-top{display:flex;align-items:flex-start;gap:11px;margin-bottom:11px}
+.cl-ico{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.cl-tw{flex:1}
+.cl-ct{font-size:14px;font-weight:700;color:var(--t1)}
+.cl-cm{font-size:11px;color:var(--t3);margin-top:2px}
+.cl-bot{display:flex;align-items:center;justify-content:space-between;padding-top:11px;border-top:1px solid var(--border)}
+.cl-pl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px}
+.cl-pa{font-family:var(--fd);font-size:20px;font-weight:800;color:var(--green)}
+.cl-pa.pnd{color:var(--t2)}
+.cl-auto{font-size:11px;color:var(--t3)}
+
+/* ── HISTORY ── */
+.hi-hdr{padding:52px 24px 14px}
+.hi-ttl{font-family:var(--fd);font-size:26px;font-weight:800;color:var(--t1)}
+.hi-sub{font-size:13px;color:var(--t2);margin-top:3px}
+.sum-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 24px;margin-bottom:16px}
+.sum-card{background:var(--card);border:1px solid var(--border);border-radius:var(--rs);padding:13px 10px;text-align:center}
+.sum-v{font-family:var(--fd);font-size:17px;font-weight:800;color:var(--t1)}
+.sum-v.g{color:var(--green)} .sum-v.o{color:var(--orange)}
+.sum-l{font-size:10px;color:var(--t3);margin-top:3px;line-height:1.3}
+.chart-card{margin:0 24px 16px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px}
+.chart-lbl{font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+.bar-chart{display:flex;align-items:flex-end;gap:7px;height:72px}
+.bc-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px}
+.bc-bar{width:100%;border-radius:5px;min-height:4px}
+.bc-bar.p{background:var(--green)}
+.bc-bar.z{background:var(--card2)}
+.bc-wk{font-size:9px;color:var(--t3)}
+.wk-list{padding:0 24px;display:flex;flex-direction:column;gap:9px}
+.wk-card{background:var(--card);border:1px solid var(--border);border-radius:var(--rs);padding:14px}
+.wk-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+.wk-date{font-size:13px;font-weight:600;color:var(--t1)}
+.wk-st{font-size:11px;font-weight:700}
+.wk-st.a{color:var(--green)} .wk-st.c{color:var(--t3)}
+.wk-det{display:flex;gap:14px}
+.wkd{font-size:12px;color:var(--t2)}
+.wkd strong{color:var(--t1);font-weight:600}
+.wkd .ga{color:var(--green);font-family:var(--fd);font-weight:700;font-size:13px}
+.wkd .za{color:var(--t3)}
+.net-ben{margin:14px 24px 0;background:linear-gradient(135deg,rgba(0,214,143,.08),rgba(0,214,143,.03));border:1px solid rgba(0,214,143,.2);border-radius:var(--rs);padding:14px;display:flex;align-items:center;justify-content:space-between}
+.nb-l{font-size:13px;color:var(--t2)}
+.nb-v{font-family:var(--fd);font-size:19px;font-weight:800;color:var(--green)}
+
+/* ── PROFILE ── */
+.pf-hdr{padding:52px 24px 16px}
+.pf-id{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:22px;text-align:center;margin-bottom:14px}
+.pf-avt{width:76px;height:76px;border-radius:50%;background:linear-gradient(135deg,var(--orange),#FF8A50);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:30px;font-weight:800;color:white;margin:0 auto 12px;border:3px solid rgba(255,92,26,.4);box-shadow:0 0 0 6px rgba(255,92,26,.07)}
+.pf-name{font-family:var(--fd);font-size:22px;font-weight:800;color:var(--t1);margin-bottom:5px}
+.pf-plat{font-size:13px;color:var(--t2);margin-bottom:11px}
+.pf-badges{display:flex;gap:7px;justify-content:center;flex-wrap:wrap}
+.pf-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.pf-stat{background:var(--card);border:1px solid var(--border);border-radius:var(--rs);padding:13px 9px;text-align:center}
+.pf-sv{font-family:var(--fd);font-size:17px;font-weight:800;color:var(--t1)}
+.pf-sv.g{color:var(--green)}
+.pf-sl{font-size:10px;color:var(--t3);margin-top:3px;line-height:1.3}
+.plan-sum{background:linear-gradient(135deg,rgba(255,92,26,.08),rgba(255,92,26,.03));border:1px solid var(--ob);border-radius:var(--r);padding:16px 18px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.ps-name{font-family:var(--fd);font-size:15px;font-weight:700;color:var(--orange)}
+.ps-meta{font-size:12px;color:var(--t2);margin-top:3px}
+.ps-upg{font-size:12px;color:var(--orange);font-weight:600;cursor:pointer}
+.set-sec{margin-bottom:14px}
+.set-ttl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t3);padding:0 24px;margin-bottom:7px}
+.set-grp{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin:0 24px}
+.set-item{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer}
+.set-item:last-child{border-bottom:none}
+.set-item:active{background:var(--card2)}
+.si-ico{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.si-txt{flex:1}
+.si-lbl{font-size:13px;font-weight:500;color:var(--t1)}
+.si-sub{font-size:11px;color:var(--t3);margin-top:2px}
+.si-r{font-size:13px;color:var(--t3)}
+.pf-foot{padding:0 24px;margin-top:10px;display:flex;flex-direction:column;gap:9px}
+.ver-txt{text-align:center;font-size:11px;color:var(--t3);padding-bottom:4px}
+</style>
+</head>
+<body>
+<div class="phone">
+
+<!-- STATUS BAR -->
+<div class="sbar">
+  <span>9:41</span>
+  <div class="sbar-icons">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><rect x="2" y="9" width="3" height="12" rx="1"/><rect x="7" y="6" width="3" height="15" rx="1"/><rect x="12" y="3" width="3" height="18" rx="1"/><rect x="17" y="1" width="3" height="20" rx="1"/></svg>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
+    <svg width="22" height="12" viewBox="0 0 26 14" fill="none"><rect x="1" y="1" width="20" height="12" rx="3" stroke="white" stroke-width="1.5"/><rect x="3" y="3" width="14" height="8" rx="1.5" fill="white"/><path d="M22 4.5v5a2.5 2.5 0 0 0 0-5z" fill="white"/></svg>
+  </div>
+</div>
+
+<!-- ===================== SPLASH ===================== -->
+<div class="screen active" id="s-splash">
+  <div class="scroll">
+    <div class="scroll-pad">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 32px 32px;min-height:800px">
+        <div class="logo-box">
+          <svg viewBox="0 0 46 46" fill="none"><path d="M23 3L5 11v13c0 11 8 20.5 18 23 10-2.5 18-12 18-23V11L23 3z" fill="rgba(255,255,255,0.2)" stroke="white" stroke-width="2"/><path d="M17 23l4 4 8-9" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="sp-title">Gig<span>Shield</span></div>
+        <div class="sp-tag"><strong style="color:var(--t1)">Income protection</strong> for Zomato &amp; Swiggy riders.<br>Disruptions stop your work — we start paying.</div>
+        <div class="sp-stats">
+          <div class="sp-stat"><div class="sp-num">₹49</div><div class="sp-lbl">Per week from</div></div>
+          <div class="sp-stat"><div class="sp-num">&lt;15m</div><div class="sp-lbl">Payout time</div></div>
+          <div class="sp-stat"><div class="sp-num">Zero</div><div class="sp-lbl">Paperwork</div></div>
+        </div>
+        <div class="sp-btns">
+          <button class="btn" onclick="go('s-onboard')">Get Protected →</button>
+          <div class="sp-trust">🔒 256-bit SSL · No hidden charges</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== ONBOARD ===================== -->
+<div class="screen" id="s-onboard">
+  <div class="scroll">
+    <div class="scroll-pad">
+      <div class="topbar">
+        <div class="back" onclick="go('s-splash')"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></div>
+        <span style="font-size:11px;color:var(--t3);font-weight:700">STEP 1 OF 3</span>
+        <div style="width:38px"></div>
+      </div>
+      <div class="px mb16">
+        <div class="prog"><div class="prog-fill" style="width:33%"></div></div>
+        <div class="ob-ttl">Let's set up<br>your shield</div>
+        <div class="ob-sub">⏱ Takes less than 2 minutes</div>
+      </div>
+      <div class="ob-body">
+        <div class="ig"><label class="lbl">Full Name</label><input class="inp" id="fn" type="text" placeholder="Arjun Sharma"></div>
+        <div class="grid2 mb16">
+          <div><label class="lbl">City</label>
+            <div class="sel-wrap"><select class="inp" id="fc"><option value="mumbai">Mumbai</option><option value="delhi">Delhi</option><option value="bangalore">Bangalore</option><option value="chennai">Chennai</option><option value="hyderabad">Hyderabad</option><option value="pune">Pune</option></select><span class="sel-arr">▼</span></div>
+          </div>
+          <div><label class="lbl">Pin Code</label><input class="inp" id="fp" type="number" placeholder="400053"></div>
+        </div>
+        <div class="ig"><label class="lbl">Delivery Platform</label>
+          <div class="plat">
+            <div class="pb" id="bz" onclick="selPlat('zomato')"><div class="pi z-pi">Z</div>Zomato</div>
+            <div class="pb on" id="bs" onclick="selPlat('swiggy')"><div class="pi sw-pi">S</div>Swiggy</div>
+          </div>
+        </div>
+        <div class="ig"><label class="lbl">Avg Weekly Earnings</label>
+          <div class="earn-val" id="ev">₹5,200 <span>/ week</span></div>
+          <input class="range" id="er" type="range" min="3000" max="8000" value="5200" step="100" oninput="updEarn(this.value)" style="background:linear-gradient(to right,var(--orange) 44%,rgba(255,255,255,0.06) 44%)">
+          <div class="range-lbls"><span>₹3,000</span><span>₹8,000</span></div>
+        </div>
+        <div class="ig"><label class="lbl">UPI ID for Payouts</label><input class="inp" id="fu" type="text" placeholder="arjun@upi"></div>
+        <button class="btn" onclick="go('s-risk')">Analyse My Risk →</button>
+        <p style="text-align:center;font-size:11px;color:var(--t3);margin-top:10px">🔒 Securely encrypted with 256-bit SSL</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== RISK ===================== -->
+<div class="screen" id="s-risk">
+  <div class="scroll">
+    <div class="scroll-pad">
+      <div class="topbar">
+        <div class="back" onclick="go('s-onboard')"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></div>
+        <span style="font-size:11px;color:var(--t3);font-weight:700">STEP 2 OF 3</span>
+        <div style="width:38px"></div>
+      </div>
+      <div class="px mb16">
+        <div class="prog"><div class="prog-fill" style="width:66%"></div></div>
+        <div class="ttl">Your Risk Profile</div>
+        <div class="sub">AI-analysed based on your zone &amp; history</div>
+      </div>
+      <div class="px">
+        <div class="card mb12">
+          <div class="lbl" style="margin-bottom:12px">🤖 AI Analysis Complete</div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--t2)"><div style="width:22px;height:22px;border-radius:50%;background:var(--gg);color:var(--green);border:1px solid rgba(0,214,143,.2);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">✓</div>Scanning Mumbai weather patterns (2015–2025)</div>
+            <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--t2)"><div style="width:22px;height:22px;border-radius:50%;background:var(--gg);color:var(--green);border:1px solid rgba(0,214,143,.2);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">✓</div>Analysing Andheri East flood risk zone</div>
+            <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--t2)"><div style="width:22px;height:22px;border-radius:50%;background:var(--gg);color:var(--green);border:1px solid rgba(0,214,143,.2);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">✓</div>Calculating your personalised premium</div>
+          </div>
+        </div>
+        <div class="risk-card">
+          <div class="gauge-wrap">
+            <svg width="170" height="95" viewBox="0 0 170 95"><path d="M15 85 A 70 70 0 0 1 155 85" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="11" stroke-linecap="round"/><path d="M15 85 A 70 70 0 0 1 155 85" fill="none" stroke="url(#gg)" stroke-width="11" stroke-linecap="round" stroke-dasharray="220" stroke-dashoffset="66"/><defs><linearGradient id="gg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#00D68F"/><stop offset="50%" stop-color="#FFB800"/><stop offset="100%" stop-color="#FF4560"/></linearGradient></defs></svg>
+            <div class="g-num">67<span>/100</span></div>
+            <div class="g-sub">Risk Score</div>
+          </div>
+          <div style="text-align:center;margin-bottom:18px"><span class="badge bg-orange">⚠ Medium Risk Zone</span></div>
+          <div class="rf">
+            <div class="rfi"><div class="rfi-icon" style="background:rgba(255,69,96,.1)">🌧️</div><div class="rfi-info"><div class="rfi-name">Flood &amp; Rain Risk</div><div class="rfi-zone">Andheri East, Mumbai</div></div><div class="rl rl-h">HIGH</div></div>
+            <div class="rfi"><div class="rfi-icon" style="background:rgba(255,184,0,.1)">🌡️</div><div class="rfi-info"><div class="rfi-name">Extreme Heat Risk</div><div class="rfi-zone">Summer months (Apr–Jun)</div></div><div class="rl rl-m">MED</div></div>
+            <div class="rfi"><div class="rfi-icon" style="background:rgba(0,214,143,.1)">💨</div><div class="rfi-info"><div class="rfi-name">AQI Pollution Risk</div><div class="rfi-zone">Mumbai coastal zone</div></div><div class="rl rl-l">LOW</div></div>
+          </div>
+        </div>
+        <div class="dis-stat"><div class="ds-icon">📅</div><div><div class="ds-num">14 days</div><div class="ds-lbl">Avg disruption days/year in your zone</div></div></div>
+        <div class="ai-note"><div style="font-size:19px">✨</div><div><div style="font-size:13px;font-weight:600;color:var(--t1)">AI-adjusted premium ready</div><div style="font-size:12px;color:var(--green);margin-top:2px">You qualify for ₹7 discount on Standard Shield</div></div></div>
+        <button class="btn" onclick="go('s-plans')">See Your Plans →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== PLANS ===================== -->
+<div class="screen" id="s-plans">
+  <div class="scroll">
+    <div class="scroll-pad">
+      <div class="topbar">
+        <div class="back" onclick="go('s-risk')"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></div>
+        <span style="font-size:11px;color:var(--t3);font-weight:700">STEP 3 OF 3</span>
+        <div style="width:38px"></div>
+      </div>
+      <div class="px mb16">
+        <div class="prog"><div class="prog-fill" style="width:100%"></div></div>
+        <div class="ttl">Choose Your<br>Shield</div>
+        <div class="sub">Weekly plans · Cancel anytime · Income only</div>
+      </div>
+      <div class="px">
+        <!-- BASIC -->
+        <div class="plan-card mb12">
+          <div class="pt">Entry Level</div>
+          <div class="pn">Basic Shield</div>
+          <div class="pp"><div class="pp-amt">₹29</div><div class="pp-per">/ week</div></div>
+          <div class="pcov">Up to <strong>₹800</strong>/week income protected</div>
+          <div class="pfeats">
+            <div class="pf"><div class="pfd gr">✓</div>Rain &amp; Flood income coverage</div>
+            <div class="pf"><div class="pfd gr">✓</div>Instant UPI payout</div>
+            <div class="pf"><div class="pfd gr">✓</div>Standard claim processing</div>
+            <div class="pf"><div class="pfd gr">✓</div>Basic fraud protection</div>
+          </div>
+          <button class="psb b" onclick="selPlan('basic')">Select Basic Plan</button>
+        </div>
+        <!-- STANDARD -->
+        <div class="plan-card feat mb12">
+          <div class="pop-badge">⭐ MOST POPULAR</div>
+          <div class="pt o">Professional</div>
+          <div class="pn">Standard Shield</div>
+          <div class="pp"><div class="pp-amt o">₹49</div><div class="pp-per">/ week</div><div class="pp-orig">₹56</div></div>
+          <div class="pai">✨ AI discount applied for your zone</div>
+          <div class="pcov">Up to <strong>₹1,500</strong>/week income protected</div>
+          <div class="pfeats">
+            <div class="pf"><div class="pfd or">✓</div>Rain &amp; Flood income coverage</div>
+            <div class="pf"><div class="pfd or">✓</div>AQI &amp; Pollution coverage</div>
+            <div class="pf"><div class="pfd or">✓</div>Curfew &amp; Strike coverage</div>
+            <div class="pf"><div class="pfd or">✓</div>Instant UPI payout</div>
+            <div class="pf"><div class="pfd or">✓</div>Priority claim processing</div>
+          </div>
+          <button class="psb s" onclick="selPlan('standard')">Activate Standard Shield →</button>
+        </div>
+        <!-- MAX -->
+        <div class="plan-card gld mb12">
+          <div class="gld-badge">👑 PREMIUM</div>
+          <div class="pt g">Executive</div>
+          <div class="pn">Max Shield</div>
+          <div class="pp"><div class="pp-amt g">₹79</div><div class="pp-per">/ week</div></div>
+          <div class="pcov g">Up to <strong style="color:var(--yellow)">₹2,500</strong>/week income protected</div>
+          <div class="pfeats">
+            <div class="pf"><div class="pfd gl">✓</div>All Standard Shield features</div>
+            <div class="pf"><div class="pfd gl">✓</div>Extreme heat coverage</div>
+            <div class="pf"><div class="pfd gl">✓</div>90% income replacement</div>
+            <div class="pf"><div class="pfd gl">✓</div>Dedicated support line</div>
+            <div class="pf"><div class="pfd gl">✓</div>Fastest payout processing</div>
+          </div>
+          <button class="psb m" onclick="selPlan('max')">Activate Max Shield →</button>
+        </div>
+      </div>
+      <div class="plans-note mb12">🔒 Auto-debited from weekly platform earnings</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== DASHBOARD ===================== -->
+<div class="screen" id="s-dash">
+  <div class="scroll">
+    <div class="scroll-pad">
+      <div class="dash-hdr">
+        <div><div class="dash-greet">Good evening 👋</div><div class="dash-name" id="dn">Arjun Sharma</div></div>
+        <div class="dash-right">
+          <div class="notif" onclick="go('s-alert')"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><div class="ndot"></div></div>
+          <div class="avt" id="da">A</div>
+        </div>
+      </div>
+      <!-- HERO -->
+      <div class="hero std" id="dh">
+        <div class="h-badge"><div class="hpulse"></div><span id="dpb">STANDARD SHIELD — ACTIVE</span></div>
+        <div class="h-lbl">You're covered this week</div>
+        <div class="h-amt" id="dpa">₹1,500</div>
+        <div class="h-sub">Maximum payout this week</div>
+        <div class="h-div"></div>
+        <div class="h-meta">
+          <div><div class="h-ml">Premium Status</div><div class="h-mv" id="dpm">₹49 Paid ✓</div></div>
+          <div style="text-align:right"><div class="h-ml">Coverage Period</div><div class="h-mv">Mar 18 – Mar 24</div></div>
+        </div>
+      </div>
+      <!-- ALERT BANNER -->
+      <div class="alert-banner" onclick="go('s-alert')">
+        <div class="ab-ico">⛈️</div>
+        <div class="ab-txt"><div class="ab-ttl">🚨 Live Alert — Heavy Rain Mumbai</div><div class="ab-sub">67mm/hr in your zone · Tap to view claim</div></div>
+        <div class="ab-arr">→</div>
+      </div>
+      <!-- CONDITIONS -->
+      <div class="sec-hdr"><div class="sec-lbl">Your City Right Now</div></div>
+      <div class="cond-grid">
+        <div class="cond-card"><div class="cond-top"><div class="cond-ico">⛈️</div><div class="cdot cdot-r"></div></div><div class="cond-lbl">Weather</div><div class="cond-val">67mm/hr</div><div class="cond-st st-r">🔴 Red Alert</div></div>
+        <div class="cond-card"><div class="cond-top"><div class="cond-ico">💨</div><div class="cdot cdot-y"></div></div><div class="cond-lbl">AQI</div><div class="cond-val">AQI 87</div><div class="cond-st st-y">🟡 Moderate</div></div>
+      </div>
+      <!-- EARNINGS -->
+      <div class="earn-card">
+        <div class="ec-top">
+          <div><div class="ec-lbl">Earnings Protected</div><div class="ec-amt">₹3,240</div><div class="ec-sub">Since you joined · 4 claims paid</div></div>
+          <div class="mini-chart"><div class="mb-bar mb-off" style="height:18px"></div><div class="mb-bar mb-on" style="height:32px"></div><div class="mb-bar mb-off" style="height:10px"></div><div class="mb-bar mb-on" style="height:46px"></div><div class="mb-bar mb-on" style="height:26px"></div></div>
+        </div>
+      </div>
+      <!-- ACTIVITY -->
+      <div class="sec-hdr mb12"><div class="sec-lbl">Recent Activity</div><div class="sec-link" onclick="tab('claims')">See all</div></div>
+      <div class="act-list mb16">
+        <div class="act-item"><div class="act-ico" style="background:rgba(59,130,246,.12)">🌧️</div><div class="act-info"><div class="act-ttl">Heavy Rain Alert</div><div class="act-meta">Mar 12, 2026 · Andheri East · Auto-triggered</div></div><div class="act-r"><div class="act-amt">₹380</div><div class="act-ck">paid ✓</div></div></div>
+        <div class="act-item"><div class="act-ico" style="background:rgba(255,184,0,.1)">💨</div><div class="act-info"><div class="act-ttl">AQI Alert — Delhi</div><div class="act-meta">Mar 7, 2026 · Auto-triggered</div></div><div class="act-r"><div class="act-amt">₹290</div><div class="act-ck">paid ✓</div></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="nav">
+    <div class="ni on" onclick="tab('dash')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg><span>Home</span></div>
+    <div class="ni" onclick="tab('claims')"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span>Claims</span></div>
+    <div class="ni" onclick="tab('history')"><svg viewBox="0 0 24 24"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg><span>History</span></div>
+    <div class="ni" onclick="tab('profile')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Profile</span></div>
+  </div>
+</div>
+
+<!-- ===================== ALERT ===================== -->
+<div class="screen" id="s-alert">
+  <div class="scroll">
+    <div class="scroll-pad">
+      <div class="alert-top">
+        <div class="at-back" onclick="go('s-dash')"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></div>
+        <div class="at-ico">⛈️</div>
+        <div class="at-badge">🚨 DISRUPTION DETECTED</div>
+        <div class="at-ttl">Heavy Rainfall Alert<br>Mumbai</div>
+        <div class="at-sub">Rainfall: 67mm/hr — RED ALERT ZONE</div>
+        <div class="at-meta">Your zone: Andheri East · Triggered 7:42 PM</div>
+      </div>
+      <div class="px" style="padding-top:18px">
+        <div class="proc-card mb12">
+          <div class="proc-ttl">⚡ Auto-Claim Processing</div>
+          <div class="proc-steps">
+            <div class="pstep"><div class="pschk ok">✓</div><div class="ps-info"><div class="ps-ttl">Weather Verified</div><div class="ps-sub">OpenWeatherMap API — 67mm/hr confirmed</div></div></div>
+            <div class="pstep"><div class="pschk ok">✓</div><div class="ps-info"><div class="ps-ttl">Zone Confirmed</div><div class="ps-sub">Andheri East — RED ALERT area affected</div></div></div>
+            <div class="pstep"><div class="pschk ok">✓</div><div class="ps-info"><div class="ps-ttl">Fraud Check Passed</div><div class="ps-sub">Trust Score: 94/100 · All signals verified</div></div></div>
+            <div class="pstep"><div class="pschk ok">✓</div><div class="ps-info"><div class="ps-ttl">Payout Processed</div><div class="ps-sub">Sent to arjun@upi at 7:44 PM</div></div></div>
+          </div>
+        </div>
+        <div class="pay-card mb12">
+          <div class="pay-lbl">✅ PAYOUT SENT</div>
+          <div class="pay-amt">₹380</div>
+          <div class="pay-upi">Credited to arjun@upi</div>
+          <div class="pay-time">Paid at 7:44 PM · 2 minutes after trigger</div>
+          <div class="pay-cov">3 hours of dinner rush covered 🍕</div>
+        </div>
+        <div class="trust-row mb12">
+          <div class="tr-l"><div class="tr-lbl">FRAUD CHECK SCORE</div><div class="tr-val">94/100</div><div class="tr-sub">Clean · Auto-approved</div></div>
+          <div class="tr-r"><div class="tr-rl">SIGNALS VERIFIED</div><div class="tr-sig">✓ GPS location</div><div class="tr-sig">✓ Activity history</div><div class="tr-sig">✓ Network validated</div></div>
+        </div>
+        <button class="btn" onclick="go('s-dash')">← Back to Dashboard</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== CLAIMS ===================== -->
+<div class="screen" id="s-claims">
+  <div class="scroll">
+    <div class="scroll-pad">
+      <div class="cl-hdr">
+        <div class="cl-ttl">My Claims</div>
+        <div class="cl-stats">
+          <div class="cl-stat"><div class="cl-sl">Total Paid</div><div class="cl-sv g">₹12,450</div></div>
+          <div class="cl-stat"><div class="cl-sl">Under Review</div><div class="cl-sv y">1 claim</div></div>
+        </div>
+      </div>
+      <div class="fpills">
+        <div class="fp on">All</div><div class="fp">Paid</div><div class="fp">Pending</div><div class="fp">Flagged</div>
+      </div>
+      <div class="cl-list mb8">
+        <div class="cl-card" onclick="go('s-alert')">
+          <div class="cl-top"><div class="cl-ico" style="background:rgba(59,130,246,.12)">🌧️</div><div class="cl-tw"><div class="cl-ct">Heavy Rain — Mumbai</div><div class="cl-cm">Mar 12, 2026 · Andheri East · Auto-triggered</div></div><span class="badge bg-green">PAID</span></div>
+          <div class="cl-bot"><div><div class="cl-pl">Payout</div><div class="cl-pa">₹380</div></div><div class="cl-auto">⚡ Paid in 2 min →</div></div>
+        </div>
+        <div class="cl-card">
+          <div class="cl-top"><div class="cl-ico" style="background:rgba(255,184,0,.1)">💨</div><div class="cl-tw"><div class="cl-ct">AQI Alert — Delhi</div><div class="cl-cm">Mar 7, 2026 · Rohini · Auto-triggered</div></div><span class="badge bg-green">PAID</span></div>
+          <div class="cl-bot"><div><div class="cl-pl">Payout</div><div class="cl-pa">₹290</div></div><div class="cl-auto">⚡ Paid in 4 min →</div></div>
+        </div>
+        <div class="cl-card">
+          <div class="cl-top"><div class="cl-ico" style="background:rgba(59,130,246,.12)">🌧️</div><div class="cl-tw"><div class="cl-ct">Heavy Rain — Mumbai</div><div class="cl-cm">Mar 3, 2026 · Kurla · Auto-triggered</div></div><span class="badge bg-green">PAID</span></div>
+          <div class="cl-bot"><div><div class="cl-pl">Payout</div><div class="cl-pa">₹420</div></div><div class="cl-auto">⚡ Paid in 3 min →</div></div>
+        </div>
+        <div class="cl-card">
+          <div class="cl-top"><div class="cl-ico" style="background:var(--og)">🌧️</div><div class="cl-tw"><div class="cl-ct">Rainfall Claim</div><div class="cl-cm">Feb 28, 2026 · Under verification</div></div><span class="badge bg-yellow">REVIEW</span></div>
+          <div class="cl-bot"><div><div class="cl-pl">Estimated</div><div class="cl-pa pnd">₹ —</div></div><div class="cl-auto" style="color:var(--yellow)">18 hrs remaining</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="nav">
+    <div class="ni" onclick="tab('dash')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg><span>Home</span></div>
+    <div class="ni on" onclick="tab('claims')"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span>Claims</span></div>
+    <div class="ni" onclick="tab('history')"><svg viewBox="0 0 24 24"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg><span>History</span></div>
+    <div class="ni" onclick="tab('profile')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Profile</span></div>
+  </div>
+</div>
+
+<!-- ===================== HISTORY ===================== -->
+<div class="screen" id="s-history">
+  <div class="scroll">
+    <div class="scroll-pad">
+      <div class="hi-hdr"><div class="hi-ttl">Protection History</div><div class="hi-sub">Weekly earnings protection summary</div></div>
+      <div class="sum-row">
+        <div class="sum-card"><div class="sum-v o">₹196</div><div class="sum-l">Total Invested</div></div>
+        <div class="sum-card"><div class="sum-v g">₹1,340</div><div class="sum-l">Total Protected</div></div>
+        <div class="sum-card"><div class="sum-v g">₹1,144</div><div class="sum-l">Net Benefit</div></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-lbl">Earnings protected · Last 8 weeks</div>
+        <div class="bar-chart">
+          <div class="bc-wrap"><div class="bc-bar p" style="height:50px"></div><div class="bc-wk">W1</div></div>
+          <div class="bc-wrap"><div class="bc-bar z" style="height:8px"></div><div class="bc-wk">W2</div></div>
+          <div class="bc-wrap"><div class="bc-bar p" style="height:32px"></div><div class="bc-wk">W3</div></div>
+          <div class="bc-wrap"><div class="bc-bar p" style="height:65px"></div><div class="bc-wk">W4</div></div>
+          <div class="bc-wrap"><div class="bc-bar z" style="height:8px"></div><div class="bc-wk">W5</div></div>
+          <div class="bc-wrap"><div class="bc-bar p" style="height:42px"></div><div class="bc-wk">W6</div></div>
+          <div class="bc-wrap"><div class="bc-bar p" style="height:55px"></div><div class="bc-wk">W7</div></div>
+          <div class="bc-wrap"><div class="bc-bar p" style="height:72px"></div><div class="bc-wk">W8</div></div>
+        </div>
+      </div>
+      <div class="wk-list">
+        <div class="wk-card"><div class="wk-top"><div class="wk-date">Week of Mar 18, 2026</div><div class="wk-st a">● CURRENT</div></div><div class="wk-det"><div class="wkd">Premium <strong>₹49</strong></div><div class="wkd">Protected <span class="ga">₹380</span></div><div class="wkd">Events <strong>1</strong></div></div></div>
+        <div class="wk-card"><div class="wk-top"><div class="wk-date">Week of Mar 11, 2026</div><div class="wk-st a">✓ 2 claims</div></div><div class="wk-det"><div class="wkd">Premium <strong>₹49</strong></div><div class="wkd">Protected <span class="ga">₹670</span></div><div class="wkd">Events <strong>2</strong></div></div></div>
+        <div class="wk-card"><div class="wk-top"><div class="wk-date">Week of Mar 4, 2026</div><div class="wk-st c">Clear week</div></div><div class="wk-det"><div class="wkd">Premium <strong>₹49</strong></div><div class="wkd">Protected <span class="za">₹0</span></div><div class="wkd">Events <strong>0</strong></div></div></div>
+        <div class="wk-card"><div class="wk-top"><div class="wk-date">Week of Feb 25, 2026</div><div class="wk-st a">✓ 1 claim</div></div><div class="wk-det"><div class="wkd">Premium <strong>₹49</strong></div><div class="wkd">Protected <span class="ga">₹290</span></div><div class="wkd">Events <strong>1</strong></div></div></div>
+      </div>
+      <div class="net-ben"><div class="nb-l">🎯 Your net benefit so far</div><div class="nb-v">+₹1,144</div></div>
+    </div>
+  </div>
+  <div class="nav">
+    <div class="ni" onclick="tab('dash')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg><span>Home</span></div>
+    <div class="ni" onclick="tab('claims')"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span>Claims</span></div>
+    <div class="ni on" onclick="tab('history')"><svg viewBox="0 0 24 24"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg><span>History</span></div>
+    <div class="ni" onclick="tab('profile')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Profile</span></div>
+  </div>
+</div>
+
+<!-- ===================== PROFILE ===================== -->
+<div class="screen" id="s-profile">
+  <div class="scroll">
+    <div class="scroll-pad">
+      <div class="pf-hdr">
+        <div class="pf-id">
+          <div class="pf-avt" id="pf-avt">A</div>
+          <div class="pf-name" id="pf-name">Your Name</div>
+          <div class="pf-plat" id="pf-plat">Delivery Partner · Mumbai</div>
+          <div class="pf-badges"><span class="badge bg-green">✓ KYC Verified</span><span class="badge bg-orange">Risk: 67 · Medium</span></div>
+        </div>
+        <div class="pf-stats">
+          <div class="pf-stat"><div class="pf-sv g">₹3,240</div><div class="pf-sl">Earnings Protected</div></div>
+          <div class="pf-stat"><div class="pf-sv">8</div><div class="pf-sl">Claims Paid</div></div>
+          <div class="pf-stat"><div class="pf-sv">4 mo</div><div class="pf-sl">Member Since</div></div>
+        </div>
+        <div class="plan-sum">
+          <div><div class="ps-name">🛡️ Standard Shield — Active</div><div class="ps-meta">₹49/week · Renews Mar 24, 2026</div></div>
+          <div class="ps-upg" onclick="go('s-plans')">Upgrade →</div>
+        </div>
+      </div>
+      <div class="set-sec"><div class="set-ttl">My Account</div>
+        <div class="set-grp">
+          <div class="set-item"><div class="si-ico" style="background:var(--og)">👤</div><div class="si-txt"><div class="si-lbl">Edit Profile</div></div><div class="si-r">›</div></div>
+          <div class="set-item"><div class="si-ico" style="background:rgba(59,130,246,.1)">💳</div><div class="si-txt"><div class="si-lbl">Linked UPI</div><div class="si-sub" id="pf-upi">—</div></div><div class="si-r">›</div></div>
+          <div class="set-item"><div class="si-ico" style="background:rgba(252,128,25,.1)">📱</div><div class="si-txt"><div class="si-lbl">Delivery Platform</div><div class="si-sub" id="pf-plat2">—</div></div><div class="si-r">›</div></div>
+          <div class="set-item"><div class="si-ico" style="background:rgba(0,214,143,.1)">📍</div><div class="si-txt"><div class="si-lbl">My Zone</div><div class="si-sub" id="pf-zone">—</div></div><div class="si-r">›</div></div>
+        </div>
+      </div>
+      <div class="set-sec"><div class="set-ttl">Insurance</div>
+        <div class="set-grp">
+          <div class="set-item"><div class="si-ico" style="background:var(--og)">📄</div><div class="si-txt"><div class="si-lbl">My Policy Documents</div></div><div class="si-r">›</div></div>
+          <div class="set-item" onclick="tab('claims')"><div class="si-ico" style="background:rgba(0,214,143,.1)">✅</div><div class="si-txt"><div class="si-lbl">Claim History</div><div class="si-sub">8 claims · ₹3,240 paid</div></div><div class="si-r">›</div></div>
+          <div class="set-item"><div class="si-ico" style="background:rgba(59,130,246,.1)">🛡️</div><div class="si-txt"><div class="si-lbl">Coverage Details</div></div><div class="si-r">›</div></div>
+        </div>
+      </div>
+      <div class="set-sec"><div class="set-ttl">Security &amp; Fraud</div>
+        <div class="set-grp">
+          <div class="set-item"><div class="si-ico" style="background:rgba(0,214,143,.1)">🔒</div><div class="si-txt"><div class="si-lbl">Fraud Protection</div><div class="si-sub">Active · Multi-signal verified</div></div><div class="si-r" style="color:var(--green)">On</div></div>
+          <div class="set-item"><div class="si-ico" style="background:rgba(0,214,143,.1)">⭐</div><div class="si-txt"><div class="si-lbl">Trust Score</div><div class="si-sub">Clean history · Auto-approved</div></div><div class="si-r" style="color:var(--green);font-weight:700">94/100</div></div>
+          <div class="set-item"><div class="si-ico" style="background:rgba(59,130,246,.1)">📡</div><div class="si-txt"><div class="si-lbl">Location Permissions</div></div><div class="si-r" style="color:var(--green)">Enabled</div></div>
+        </div>
+      </div>
+      <div class="set-sec"><div class="set-ttl">Support</div>
+        <div class="set-grp">
+          <div class="set-item"><div class="si-ico" style="background:var(--og)">❓</div><div class="si-txt"><div class="si-lbl">Help &amp; FAQ</div></div><div class="si-r">›</div></div>
+          <div class="set-item"><div class="si-ico" style="background:rgba(59,130,246,.1)">💬</div><div class="si-txt"><div class="si-lbl">Contact Support</div></div><div class="si-r">›</div></div>
+          <div class="set-item"><div class="si-ico" style="background:rgba(255,255,255,.04)">ℹ️</div><div class="si-txt"><div class="si-lbl">About GigShield</div></div><div class="si-r">›</div></div>
+        </div>
+      </div>
+      <div class="pf-foot">
+        <button class="btn-red">Pause Coverage This Week</button>
+        <button class="btn-red" onclick="logout()" style="border-color:rgba(255,69,96,.5);display:flex;align-items:center;justify-content:center;gap:8px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Log Out
+        </button>
+        <div class="ver-txt">GigShield v1.0 · 256-bit SSL · Income protection only</div>
+      </div>
+    </div>
+  </div>
+  <div class="nav">
+    <div class="ni" onclick="tab('dash')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg><span>Home</span></div>
+    <div class="ni" onclick="tab('claims')"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span>Claims</span></div>
+    <div class="ni" onclick="tab('history')"><svg viewBox="0 0 24 24"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg><span>History</span></div>
+    <div class="ni on" onclick="tab('profile')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Profile</span></div>
+  </div>
+</div>
+
+</div><!-- /phone -->
+
+<script>
+const PLANS = {
+  basic:    { payout:'₹800',   badge:'BASIC SHIELD — ACTIVE',    cls:'bsc', pm:'₹29 Paid ✓' },
+  standard: { payout:'₹1,500', badge:'STANDARD SHIELD — ACTIVE', cls:'std', pm:'₹49 Paid ✓' },
+  max:      { payout:'₹2,500', badge:'👑 MAX SHIELD — ACTIVE',    cls:'max', pm:'₹79 Paid ✓' },
+};
+
+// ── NAVIGATE: hide all, show one ──────────────────────
+function go(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const t = document.getElementById(id);
+  if(t){ t.classList.add('active'); t.querySelector('.scroll') && (t.querySelector('.scroll').scrollTop=0); }
+}
+
+// ── TAB NAVIGATION ────────────────────────────────────
+function tab(name) {
+  const map = { dash:'s-dash', claims:'s-claims', history:'s-history', profile:'s-profile' };
+  go(map[name]);
+}
+
+// ── PLATFORM TOGGLE ───────────────────────────────────
+function selPlat(p) {
+  document.getElementById('bz').classList.toggle('on', p==='zomato');
+  document.getElementById('bs').classList.toggle('on', p==='swiggy');
+}
+
+// ── EARNINGS SLIDER ───────────────────────────────────
+function updEarn(v) {
+  const n = parseInt(v);
+  document.getElementById('ev').innerHTML = '₹'+n.toLocaleString('en-IN')+' <span>/ week</span>';
+  const pct = ((n-3000)/5000)*100;
+  document.getElementById('er').style.background =
+    `linear-gradient(to right,var(--orange) ${pct}%,rgba(255,255,255,0.06) ${pct}%)`;
+}
+
+// ── SYNC USER DATA ACROSS ALL PAGES ──────────────────
+function syncUser(plan) {
+  const name    = document.getElementById('fn').value.trim() || 'Your Name';
+  const city    = document.getElementById('fc');
+  const cityVal = city.options[city.selectedIndex].text;
+  const pin     = document.getElementById('fp').value.trim();
+  const upi     = document.getElementById('fu').value.trim() || '—';
+  const platEl  = document.getElementById('bs').classList.contains('on') ? 'Swiggy' : 'Zomato';
+  const initial = name.charAt(0).toUpperCase();
+  const zone    = pin ? `${cityVal} · ${pin}` : cityVal;
+
+  // Dashboard
+  document.getElementById('dn').textContent  = name;
+  document.getElementById('da').textContent  = initial;
+
+  // Profile
+  document.getElementById('pf-name').textContent  = name;
+  document.getElementById('pf-avt').textContent   = initial;
+  document.getElementById('pf-plat').textContent  = `${platEl} Partner · ${cityVal}`;
+  document.getElementById('pf-upi').textContent   = upi;
+  document.getElementById('pf-plat2').textContent = platEl;
+  document.getElementById('pf-zone').textContent  = zone;
+}
+
+// ── PLAN SELECTION ────────────────────────────────────
+function selPlan(p) {
+  const d = PLANS[p];
+  const hero = document.getElementById('dh');
+  hero.className = 'hero '+d.cls;
+  document.getElementById('dpb').textContent = d.badge;
+  document.getElementById('dpa').textContent = d.payout;
+  document.getElementById('dpm').textContent = d.pm;
+  syncUser(p);
+  go('s-dash');
+}
+
+// ── LOGOUT ────────────────────────────────────────────
+function logout() {
+  // Reset form fields
+  document.getElementById('fn').value = '';
+  document.getElementById('fp').value = '';
+  document.getElementById('fu').value = '';
+  document.getElementById('fc').selectedIndex = 0;
+  selPlat('swiggy');
+  document.getElementById('er').value = 5200;
+  updEarn(5200);
+  // Reset dashboard to defaults
+  document.getElementById('dn').textContent = 'Your Name';
+  document.getElementById('da').textContent = '?';
+  document.getElementById('dh').className   = 'hero std';
+  document.getElementById('dpb').textContent = 'STANDARD SHIELD — ACTIVE';
+  document.getElementById('dpa').textContent = '₹1,500';
+  document.getElementById('dpm').textContent = '₹49 Paid ✓';
+  go('s-splash');
+}
+
+// ── FILTER PILLS ──────────────────────────────────────
+document.addEventListener('click', e => {
+  if(e.target.classList.contains('fp')){
+    e.target.closest('.fpills').querySelectorAll('.fp').forEach(f=>f.classList.remove('on'));
+    e.target.classList.add('on');
+  }
+});
+</script>
+</body>
+</html>
